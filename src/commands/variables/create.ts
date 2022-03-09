@@ -1,3 +1,4 @@
+import { Flags } from '@oclif/core'
 import {
     createVariable,
     CreateVariableParams
@@ -10,11 +11,15 @@ import {
     variableTypePrompt,
     featurePrompt
 } from '../../ui/prompts'
+import Base from '../base'
 import CreateCommand from '../createCommand'
 
 export default class CreateVariable extends CreateCommand<CreateVariableParams> {
     static hidden = false
     static description = 'Create a new Variable for an existing Feature.'
+    static flags = {
+        ...CreateCommand.flags
+    }
     
     prompts = [
         keyPrompt,
