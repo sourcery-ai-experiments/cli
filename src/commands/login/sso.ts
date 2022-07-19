@@ -5,7 +5,6 @@ import { fetchOrganizations, Organization } from '../../api/organizations'
 import { promptForOrganization } from '../../ui/promptForOrganization'
 import { fetchProjects, Project } from '../../api/projects'
 import { promptForProject } from '../../ui/promptForProject'
-import { togglebot } from '../../ui/togglebot'
 import { Flags } from '@oclif/core'
 
 export default class Login extends Base {
@@ -69,10 +68,10 @@ export default class Login extends Base {
         this.writer.successMessage(`Selected project ${selectedProject.key}`)
         await this.updateUserConfig({ project: selectedProject.key })
 
-        console.log('')
+        this.writer.blankLine()
         this.writer.successMessage('Successfully logged in to DevCycle')
-        console.log('')
-        console.log(togglebot)
+        this.writer.blankLine()
+        this.writer.showTogglebot()
     }
 
     private async organizationFromFlags(organizations:Organization[]): Promise<(Organization | null)> {

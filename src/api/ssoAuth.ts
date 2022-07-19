@@ -86,7 +86,7 @@ export default class SSOAuth {
         // prevents keep-alive connections from keeping the server running after close()
         this.server.on('connection', function(socket) { socket.unref() })
         this.server.listen(PORT, host, () => {
-            console.log('Opening browser for authentication...')
+            this.writer.statusMessage('Opening browser for authentication...')
             cli.open(authorizeUrl)
         })
         this.server.on('close', this.handleServerClosed.bind(this))
