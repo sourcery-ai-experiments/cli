@@ -45,7 +45,11 @@ export default abstract class Base extends Command {
             description: 'Disable API-based enhancements for commands where authorization is optional. Suppresses ' +
                 'warnings about missing credentials.',
             helpGroup: 'Global'
-        })
+        }),
+        'headless': Flags.boolean({
+            description: 'Disable all interactive flows and format output for easy parsing.',
+            helpGroup: 'Global'
+        }),
     }
 
     token = ''
