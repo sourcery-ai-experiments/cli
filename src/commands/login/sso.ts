@@ -6,7 +6,6 @@ import { promptForOrganization } from '../../ui/promptForOrganization'
 import { fetchProjects, Project } from '../../api/projects'
 import { promptForProject } from '../../ui/promptForProject'
 import { togglebot } from '../../ui/togglebot'
-import { showResults, successMessage } from '../../ui/output'
 import { Flags } from '@oclif/core'
 
 export default class Login extends Base {
@@ -26,7 +25,7 @@ export default class Login extends Base {
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Login)
-        const ssoAuth = new SSOAuth()
+        const ssoAuth = new SSOAuth(this.writer)
         this.token = await ssoAuth.getAccessToken()
         storeAccessToken(this.token, this.authPath)
 
@@ -44,14 +43,14 @@ export default class Login extends Base {
         })
         const organization = await this.organizationFromFlags(organizations)
         if(organization === null) {
-            return showResults({organizations: filteredOrgs})
+            return this.writer.showResults({organizations: filteredOrgs})
         }
         //await new Promise(resolve => setTimeout(resolve, 5000))
         await this.selectOrganization(organization)
         const projects = await fetchProjects(this.token)
         const project = await this.projectFromFlags(projects)
         if(project === null) {
-            return showResults({projects})
+            return this.writer.showResults({projects})
         }
     }
 
@@ -67,11 +66,11 @@ export default class Login extends Base {
         const projects = await fetchProjects(this.token)
         const flagProject = await this.projectFromFlags(projects)
         const selectedProject = flagProject || await promptForProject(projects)
-        successMessage(`Selected project ${selectedProject.key}`)
+        this.writer.successMessage(`Selected project ${selectedProject.key}`)
         await this.updateUserConfig({ project: selectedProject.key })
 
         console.log('')
-        successMessage('Successfully logged in to DevCycle')
+        this.writer.successMessage('Successfully logged in to DevCycle')
         console.log('')
         console.log(togglebot)
     }
@@ -108,7 +107,7 @@ export default class Login extends Base {
     }
 
     private async selectOrganization(organization: Organization) {
-        const ssoAuth = new SSOAuth()
+        const ssoAuth = new SSOAuth(this.writer)
         this.token = await ssoAuth.getAccessToken(organization)
         storeAccessToken(this.token, this.authPath)
     }

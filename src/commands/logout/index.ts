@@ -11,6 +11,6 @@ export default class Logout extends Base {
         if (fs.existsSync(this.authPath)) {
             fs.rmSync(this.authPath)
         }
-        console.log(togglebotSleep) 
+        this.writer.showTogglebotSleep()
     }
 }

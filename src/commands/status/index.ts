@@ -1,9 +1,3 @@
-import {
-    failureMessage,
-    statusMessage,
-    successMessage
-} from '../../ui/output'
-import { togglebot, togglebotSleep } from '../../ui/togglebot'
 import Base from '../base'
 
 export default class ShowStatus extends Base {
@@ -12,33 +6,33 @@ export default class ShowStatus extends Base {
 
     async run(): Promise<void> {
         if (this.hasToken()) {
-            console.log(togglebot)
+            this.writer.showTogglebot()
         } else {
-            console.log(togglebotSleep)
+            this.writer.showTogglebotSleep()
         }
 
-        statusMessage(`Devcycle CLI Version ${this.config.version}`)
+        this.writer.statusMessage(`Devcycle CLI Version ${this.config.version}`)
 
-        statusMessage(`Repo config path ${this.repoConfigPath}`)
+        this.writer.statusMessage(`Repo config path ${this.repoConfigPath}`)
         if (this.repoConfig) {
-            successMessage('Repo config loaded')
+            this.writer.successMessage('Repo config loaded')
         } else {
-            failureMessage('No repo config loaded.')
+            this.writer.failureMessage('No repo config loaded.')
         }
 
-        statusMessage(`User config path ${this.configPath}`)
+        this.writer.statusMessage(`User config path ${this.configPath}`)
         if (this.config) {
-            successMessage('User config loaded')
+            this.writer.successMessage('User config loaded')
         } else {
-            failureMessage('No user config loaded.')
+            this.writer.failureMessage('No user config loaded.')
         }
 
-        statusMessage(`Auth config path ${this.authPath}`)
+        this.writer.statusMessage(`Auth config path ${this.authPath}`)
 
         if (this.hasToken()) {
-            successMessage('Currently logged in to DevCycle')
+            this.writer.successMessage('Currently logged in to DevCycle')
         } else {
-            failureMessage('Currently not logged in to DevCycle')
+            this.writer.failureMessage('Currently not logged in to DevCycle')
         }
     }
 }

@@ -9,7 +9,6 @@ import { promptForOrganization } from '../../ui/promptForOrganization'
 import { fetchProjects } from '../../api/projects'
 import { promptForProject } from '../../ui/promptForProject'
 import { Flags } from '@oclif/core'
-import { showResults } from '../../ui/output'
 export default class SelectOrganization extends Base {
     static description = 'Select which organization to access through the API'
     static hidden = false
@@ -31,7 +30,7 @@ export default class SelectOrganization extends Base {
 
         const projects = await fetchProjects(token)
         if(flags.headless) {
-            return showResults(projects)
+            return this.writer.showResults(projects)
         }
         const selectedProject = await promptForProject(projects)
         await this.updateUserConfig({ project:selectedProject.key })

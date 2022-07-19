@@ -3,7 +3,6 @@ import {
     updateVariable,
     CreateVariableParams
 } from '../../api/variables'
-import { showResults } from '../../ui/output'
 import {
     descriptionPrompt,
     featurePrompt,
@@ -41,6 +40,6 @@ export default class UpdateVariable extends UpdateCommand<CreateVariableParams> 
             variable.key,
             params
         )
-        showResults(result)
+        this.writer.showResults(result)
     }
 }
