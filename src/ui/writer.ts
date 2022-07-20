@@ -19,7 +19,11 @@ export default class Writer {
     }
 
     public showResults(results:unknown):void {
-        console.log(JSON.stringify(results, null, 2))
+        if(this.headless) {
+            console.log(JSON.stringify(results))
+        } else {
+            console.log(JSON.stringify(results, null, 2))
+        }
     }
 
     public showTogglebot() {

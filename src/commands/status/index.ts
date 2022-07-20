@@ -5,6 +5,10 @@ export default class ShowStatus extends Base {
     static description = 'Print CLI version information, configuration file locations and auth status.'
 
     async run(): Promise<void> {
+        const { flags } = await this.parse(ShowStatus)
+        if(flags.headless) {
+            return this.runHeadless()
+        }
         if (this.hasToken()) {
             this.writer.showTogglebot()
         } else {
@@ -34,5 +38,17 @@ export default class ShowStatus extends Base {
         } else {
             this.writer.failureMessage('Currently not logged in to DevCycle')
         }
+    }
+
+    async runHeadless(): Promise<void> {
+        this.writer.showResults({
+            version: this.config.version,
+            repoConfigPath: this.repoConfigPath,
+            repoConfigExists: !!this.repoConfig,
+            userConfigPath: this.configPath,
+            userConfigExists: !!this.config,
+            authConfigPath: this.authPath,
+            hasAccessToken: this.hasToken(),
+        })
     }
 }
