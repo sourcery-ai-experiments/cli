@@ -127,21 +127,24 @@ export abstract class RefactorEngine {
     }
 
     /**
-     * Replace any DVC SDK variable methods with a static object
+     * Replace any DVC SDK variable methods with a static variable object
      */
     private replaceFeatureFlags = () => {
+        // Check if the argument is the variable key or an alias
         const isKeyOrAlias = (arg: any): boolean => {
             const isKey = arg.type.includes('Literal') && arg.value === this.variable.key
             const isAlias = arg.type === 'Identifier' && this.aliases.has(arg.name)
             return isKey || isAlias
         }
+        // Get the variable property to be replaced, returns undefined if not a variable method
+        // ex. 'variable', 'variable.value'
         const getVariableProperty = (node: any): string | undefined => {
             if (node.type !== 'CallExpression') return undefined
 
             let identifier
             if (node.callee.type === 'Identifier') {
                 identifier = node.callee
-            } else if (isMemberExpression(node.callee) && node.callee.property.type === 'Identifier') {
+            } else if (node.callee.type === 'MemberExpression' && node.callee.property.type === 'Identifier') {
                 identifier = node.callee.property
             }
 
@@ -187,9 +190,10 @@ export abstract class RefactorEngine {
         const engine = this
         estraverse.replace(this.ast, {
             enter: function(node) {
-                // Refactor DVC object properties (ie. key, value, isDefaulted)
                 if (
-                    isMemberExpression(node) &&
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    (node.type === 'MemberExpression' || node.type === 'OptionalMemberExpression') &&
                     RefactorEngine.isDVCObject(node.object)
                 ) {
                     const propertyName = (node.property as Identifier).name
