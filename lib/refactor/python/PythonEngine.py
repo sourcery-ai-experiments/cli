@@ -1,12 +1,17 @@
+
+from typing import Dict, Union, Any
+from enum import Enum
 import ast
 import astor
 import os
-from typing import Dict, Union
-from enum import Enum
 
-VariableValue = Union[str, bool, int, Dict[str, any]]
+VariableValue = Union[str, bool, int, Dict[str, Any]]
 VariableType = Enum('VariableType', ['String', 'Boolean', 'Number', 'JSON'])
 Variable = Dict[str, Union[VariableValue, VariableType]]
+
+class DVCLiteral:
+    def __init__(self, value):
+        self.value = value
 
 class PythonEngine:
     sdk_methods = {
@@ -22,6 +27,7 @@ class PythonEngine:
         self.var_assignments = {}
         self.changed = False
         self.file_refactored = False
+        self.var_assignments = {}
 
     @staticmethod
     def is_dvc_literal(node):
@@ -71,6 +77,33 @@ class PythonEngine:
         dict._created_by_dvc = True
 
         return dict
+    
+    @staticmethod
+    def literal(value):
+        return DVCLiteral(value)
+
+    @staticmethod
+    def reduce_logical_expression(literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
+        if operator == 'and':
+            return expression if literal.value else self.literal(False)
+        elif operator == 'or':
+            return self.literal(True) if literal.value else expression
+
+    @staticmethod
+    def reduce_binary_expression(literal_value: Union[int, str, bool], expression: ast.Expr, operator: str) -> Union[bool, None]:
+        if not isinstance(expression, ast.Constant):
+            return None
+
+        if operator == '==':
+            return literal_value == expression.value
+        elif operator == '===':
+            return literal_value is expression.value
+    
+    def get_assignment_value_if_set(expression):
+        if isinstance(expression, ast.Name) and expression.id in self.var_assignments:
+            return self.var_assignments[expression.id].value
+        else:
+            return expression
 
     def replace_feature_flags(self):
         """
@@ -106,6 +139,99 @@ class PythonEngine:
                 return node
         
         self.ast = ReplaceVariable().visit(self.ast)
+    
+    def evaluate_expressions(self):
+        def replace_node(node):
+            updated_node = None
+            if isinstance(node, ast.BoolOp):
+                expression1 = self.get_assignment_value_if_set(node.values[0])
+                expression2 = self.get_assignment_value_if_set(node.values[1])
+
+                if isinstance(expression1, DVCLiteral):
+                    updated_node = self.reduce_logical_expression(
+                        expression1, expression2, node.op)
+                elif isinstance(expression2, DVCLiteral):
+                    updated_node = self.reduce_logical_expression(
+                        expression2, expression1, node.op)
+
+            elif isinstance(node, ast.BinOp):
+                expression1 = self.get_assignment_value_if_set(node.left)
+                expression2 = self.get_assignment_value_if_set(node.right)
+
+                if isinstance(expression1, DVCLiteral):
+                    updated_node = self.reduce_binary_expression(
+                        expression1, expression2, node.op)
+                elif isinstance(expression2, DVCLiteral):
+                    updated_node = self.reduce_binary_expression(
+                        expression2, expression1, node.op)
+
+            elif isinstance(node, ast.UnaryOp) and isinstance(
+                    node.op, ast.Not):
+                node_argument = self.get_assignment_value_if_set(node.operand)
+
+                if isinstance(node_argument, DVCLiteral):
+                    literal_argument = node_argument
+                    updated_node = ast.parse(
+                        str(not literal_argument.value)).body[0].value
+
+            if updated_node:
+                engine.changed = True
+                return updated_node
+
+        engine = self
+        ast_node = ast.parse(engine.code)
+        for node in ast.walk(ast_node):
+            if isinstance(node, ast.BoolOp) or isinstance(
+                    node, ast.BinOp) or (isinstance(node, ast.UnaryOp)
+                                         and isinstance(node.op, ast.Not)):
+                updated_node = replace_node(node)
+                if updated_node:
+                    ast.copy_location(updated_node, node)
+                    ast.fix_missing_locations(updated_node)
+
+        engine.ast = ast_node
+
+    def reduce_if_statements(self):
+
+        def visit_if(node):
+            test_value = self.get_assignment_value_if_set(node.test)
+
+            if isinstance(test_value, ast.Constant):
+                self.changed = True
+
+                if test_value.value:
+                    return node.body
+                elif node.orelse is None:
+                    return ast.Pass()
+                else:
+                    return node.orelse
+
+        def flatten_blocks(node):
+            new_body = []
+
+            for stmt in node.body:
+                if isinstance(stmt, ast.If):
+                    new_body.extend(flatten_blocks(stmt))
+                else:
+                    new_body.append(stmt)
+
+            node.body = new_body
+
+        tree = self.parser.parse(self.source)
+        visitor = ast.NodeTransformer()
+
+        visitor.visit(tree)
+        visitor.visit(ast.fix_missing_locations(tree))
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.If):
+                new_node = visit_if(node)
+
+                if new_node is not None:
+                    node.parent.body = new_node
+
+        flatten_blocks(tree)
+        return ast.unparse(tree)
     
     def parse_ast(self):
         try:
