@@ -31,15 +31,11 @@ class PythonEngine:
 
     @staticmethod
     def is_dvc_literal(node):
-        return (
-            node.type == 'Literal'
-            and isinstance(node.value, bool)
-            and node.raw.startswith('dvc(')
-        )
+        return isinstance(node, ast.Constant) and hasattr(node, '_created_by_dvc')
 
     @staticmethod
     def is_dvc_object(node):
-        return hasattr(node, '_created_by_dvc')
+        return isinstance(node, ast.Dict) and hasattr(node, '_created_by_dvc')
 
     @staticmethod
     def dvc_variable_object(variable: Variable) -> ast.Dict:
@@ -71,6 +67,11 @@ class PythonEngine:
         dict._created_by_dvc = True
 
         return dict
+
+    @staticmethod
+    def dvc_literal(node):
+        node._created_by_dvc = True
+        return node
     
     @staticmethod
     def literal(value):
@@ -119,7 +120,7 @@ class PythonEngine:
             ):
                 return self.sdk_methods[node.func.attr]
 
-        class ReplaceVariable(ast.NodeTransformer):
+        class NodeTraverse(ast.NodeTransformer):
             def visit_Call(self, node):
                 variable_property = get_variable_property(node)
                 if variable_property:
@@ -128,7 +129,7 @@ class PythonEngine:
                         return engine.dvc_variable_object(engine.variable)
                 return node
         
-        self.ast = ReplaceVariable().visit(self.ast)
+        self.ast = NodeTraverse().visit(self.ast)
 
     def reduce_objects(self):
         """
@@ -136,7 +137,7 @@ class PythonEngine:
         if they exist in the current scope.
         """
         engine = self
-        class ObjectReducer(ast.NodeTransformer):
+        class NodeTraverse(ast.NodeTransformer):
             def visit_Call(self, node):
                 # Refactor DVC object methods (ie. onUpdate)
                 if (
@@ -155,11 +156,51 @@ class PythonEngine:
                     for key, value in zip(node.value.keys, node.value.values):
                         if key.value == node.attr:
                             engine.changed = True
-                            return value
+                            return engine.dvc_literal(value)
                 return node
 
-        reducer = ObjectReducer()
-        reducer.visit(self.ast)
+        NodeTraverse().visit(self.ast)
+
+    def get_variable_map(self):
+        """
+        Build a map of variables assigned to a DVC literal or variable object
+        Only booleans and variable objects should be replaced,
+        other types will be referenced when evaluating conditionals
+        """
+        assignments = {}
+        engine = self
+        class NodeTraverse(ast.NodeTransformer):
+            def visit_Assign(self, node):
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        if engine.is_dvc_literal(node.value):
+                            assignments[target.id] = {
+                                'replace': isinstance(node.value.value, bool),
+                                'value': node.value
+                            }
+                        elif engine.is_dvc_object(node.value):
+                            assignments[target.id] = {
+                                'replace': True,
+                                'value': node.value
+                            }
+                return node
+
+            def visit_Expr(self, node):
+                if (isinstance(node.value, ast.Assign) and isinstance(node.value.targets[0], ast.Name)):
+                    if engine.is_dvc_literal(node.value.value):
+                        assignments[node.value.targets[0].id] = {
+                            'replace': isinstance(node.value.value.args[0].value, bool),
+                            'value': node.value.value.args[0].value
+                        }
+                    elif engine.is_dvc_object(node.value.value):
+                        assignments[node.value.targets[0].id] = {
+                            'replace': True,
+                            'value': node.value.value.args[0].keys
+                        }
+                return node
+
+        NodeTraverse().visit(self.ast)
+        return assignments
 
     
     def evaluate_expressions(self):
@@ -291,7 +332,7 @@ class PythonEngine:
 
             self.replace_feature_flags()
             self.reduce_objects()
-        #     self.var_assignments = self.getVariableMap()
+            self.var_assignments = self.get_variable_map()
         #     self.pruneVarReferences()
         #     self.evaluateExpressions()
         #     self.reduceIfStatements()
