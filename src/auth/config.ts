@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer'
+
 import {
     IsOptional,
     IsString,
@@ -32,6 +33,7 @@ export class AuthConfig {
     @Type(() => SSOAuthConfig)
     sso?: SSOAuthConfig
 }
+
 
 export async function storeAccessToken(accessToken:string, authPath:string):Promise<void> {
     const configDir = path.dirname(authPath)
