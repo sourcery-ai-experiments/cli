@@ -19,6 +19,7 @@ key = 'show-discord-button' # Variable key
 try:
   # Fetch variable values using the identifier key, with a default value and user object
   # The default value can be of type string, boolean, number, or JSON
+  variable = dvc.variable(user, 'show-discord-button', False)
   variable = dvc.variable(user, key, False)
 
   # Use receieved Value
