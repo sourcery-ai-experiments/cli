@@ -1,4 +1,4 @@
-const libPath = '/Users/laurawarr/Dev/cli/lib/refactor'
+const libPath = `${__dirname}/../../../lib/refactor`
 
 const jsCommand = ['node', `${libPath}/javascript/main.js`]
 const pyCommand = ['python3', `${libPath}/python/main.py`]
