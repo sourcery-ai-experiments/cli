@@ -83,7 +83,7 @@ class PythonEngine:
         return DVCLiteral(value)
 
     @staticmethod
-    def reduce_logical_expression(literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
+    def reduce_logical_expression(self, literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
         if operator == 'and':
             return expression if literal.value else self.literal(False)
         elif operator == 'or':
@@ -99,7 +99,7 @@ class PythonEngine:
         elif operator == '===':
             return literal_value is expression.value
     
-    def get_assignment_value_if_set(expression):
+    def get_assignment_value_if_set(self, expression):
         if isinstance(expression, ast.Name) and expression.id in self.var_assignments:
             return self.var_assignments[expression.id].value
         else:
@@ -144,19 +144,19 @@ class PythonEngine:
         def replace_node(node):
             updated_node = None
             if isinstance(node, ast.BoolOp):
-                expression1 = self.get_assignment_value_if_set(node.values[0])
-                expression2 = self.get_assignment_value_if_set(node.values[1])
+                expression1 = self.get_assignment_value_if_set(self, node.values[0])
+                expression2 = self.get_assignment_value_if_set(self, node.values[1])
 
                 if isinstance(expression1, DVCLiteral):
                     updated_node = self.reduce_logical_expression(
-                        expression1, expression2, node.op)
+                        self, expression1, expression2, node.op)
                 elif isinstance(expression2, DVCLiteral):
                     updated_node = self.reduce_logical_expression(
-                        expression2, expression1, node.op)
+                        self, expression2, expression1, node.op)
 
             elif isinstance(node, ast.BinOp):
-                expression1 = self.get_assignment_value_if_set(node.left)
-                expression2 = self.get_assignment_value_if_set(node.right)
+                expression1 = self.get_assignment_value_if_set(self, node.left)
+                expression2 = self.get_assignment_value_if_set(self, node.right)
 
                 if isinstance(expression1, DVCLiteral):
                     updated_node = self.reduce_binary_expression(
@@ -167,7 +167,7 @@ class PythonEngine:
 
             elif isinstance(node, ast.UnaryOp) and isinstance(
                     node.op, ast.Not):
-                node_argument = self.get_assignment_value_if_set(node.operand)
+                node_argument = self.get_assignment_value_if_set(self, node.operand)
 
                 if isinstance(node_argument, DVCLiteral):
                     literal_argument = node_argument
@@ -194,7 +194,7 @@ class PythonEngine:
     def reduce_if_statements(self):
 
         def visit_if(node):
-            test_value = self.get_assignment_value_if_set(node.test)
+            test_value = self.get_assignment_value_if_set(self, node.test)
 
             if isinstance(test_value, ast.Constant):
                 self.changed = True
