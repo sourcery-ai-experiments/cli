@@ -10,10 +10,10 @@ class PythonEngine:
         self.ast = None
         self.varAssignments = {}
         self.changed = False
-        self.fileRefactored = False
+        self.file_refactored = False
 
     @staticmethod
-    def isDVCLiteral(node):
+    def is_dvc_literal(node):
         return (
             node.type == 'Literal'
             and isinstance(node.value, bool)
@@ -21,7 +21,7 @@ class PythonEngine:
         )
 
     @staticmethod
-    def isDVCObject(node):
+    def is_dvc_object(node):
         return (
             node.type == 'ObjectExpression'
             and any(
@@ -29,8 +29,11 @@ class PythonEngine:
                 for prop in node.properties
             )
         )
+
+    def replace_feature_flags(self):
+        pass
     
-    def parseAST(self):
+    def parse_ast(self):
         try:
             parseOptions = {}
             with open(self.filepath, 'r') as file:
@@ -40,12 +43,12 @@ class PythonEngine:
             print(f"Error parsing file {self.filepath}")
             print(f"\t{err}")
 
-    def printAST(self):
+    def print_ast(self):
         try:
             code = astor.to_source(self.ast)
             if self.output == 'console':
                 print(code)
-            elif self.fileRefactored:
+            elif self.file_refactored:
                 with open(self.filepath, 'w') as file:
                     file.write(code)
         except Exception as err:
@@ -53,7 +56,7 @@ class PythonEngine:
             print(f"\t{err}")
 
     def refactor(self):
-        self.parseAST()
+        self.parse_ast()
         if not self.ast:
             return
 
@@ -64,13 +67,13 @@ class PythonEngine:
         #     self.changed = False
         #     iterations += 1
 
-        #     self.replaceFeatureFlags()
+        #     self.replace_feature_flags()
         #     self.reduceObjects()
         #     self.varAssignments = self.getVariableMap()
         #     self.pruneVarReferences()
         #     self.evaluateExpressions()
         #     self.reduceIfStatements()
         #     if self.changed:
-        #         self.fileRefactored = True
+        #         self.file_refactored = True
 
-        self.printAST()
+        self.print_ast()
