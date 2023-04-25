@@ -41,7 +41,7 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
-    "@oclif/test": "^2",
+    "@oclif/test": "^2.3.17",
     "@types/chai": "^4",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.9.4",
