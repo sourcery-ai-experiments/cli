@@ -135,7 +135,14 @@ export default class Cleanup extends Base {
                     const childProcess = spawn(command, [engineFilePath, ...engineArgs])
                     childProcess.stdout.on('data', (msg) => console.log(msg.toString()))
                     childProcess.stdout.on('message', (msg) => console.log(msg.toString()))
-                    childProcess.stdout.on('error', (msg) => console.error(msg.toString()))
+                    childProcess.on('error', (err: Error & { code: string }) => {
+                        console.warn(chalk.yellow(`Error refactoring ${filepathToRefactor}`))
+                        if (err.code === 'ENOENT') {
+                            console.warn(`Could not find ${command} executable. Is it installed?`)
+                        } else {
+                            console.error(err.toString())
+                        }
+                    })
                 } catch (err: any) {
                     console.warn(chalk.yellow(`Error refactoring ${filepathToRefactor}`))
                     console.warn(`\t${err.message}`)
