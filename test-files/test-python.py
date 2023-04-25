@@ -24,8 +24,10 @@ try:
   # Use receieved Value
   if variable.value:
     # Put feature code here, or launch feature from here
+    pass
   else:
     # Put feature code here, or launch feature from here
+    pass
 
 except ApiException as e:
   print("Exception when calling DVCClient->variable: %s" %e)
