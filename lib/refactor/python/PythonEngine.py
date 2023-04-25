@@ -39,13 +39,7 @@ class PythonEngine:
 
     @staticmethod
     def is_dvc_object(node):
-        return (
-            node.type == 'ObjectExpression'
-            and any(
-                prop.key.type == 'Identifier' and prop.key.name == 'dvc'
-                for prop in node.properties
-            )
-        )
+        return hasattr(node, '_created_by_dvc')
 
     @staticmethod
     def dvc_variable_object(variable: Variable) -> ast.Dict:
@@ -119,8 +113,6 @@ class PythonEngine:
                 return is_key or is_alias
 
         def get_variable_property(node):
-            if not isinstance(node, ast.Call):
-                return None
             if (
                 isinstance(node.func, ast.Attribute) and
                 node.func.attr in self.sdk_methods and is_key_or_alias(node.args[1])
@@ -128,17 +120,47 @@ class PythonEngine:
                 return self.sdk_methods[node.func.attr]
 
         class ReplaceVariable(ast.NodeTransformer):
-            def generic_visit(self, node):
-                # Need to call super() in any case to visit child nodes of the current one.
-                super().generic_visit(node)
+            def visit_Call(self, node):
                 variable_property = get_variable_property(node)
                 if variable_property:
-                    self.changed = True
+                    engine.changed = True
                     if (variable_property == 'variable'):
                         return engine.dvc_variable_object(engine.variable)
                 return node
         
         self.ast = ReplaceVariable().visit(self.ast)
+
+    def reduce_objects(self):
+        """
+        Reduce object literals by replacing them with their corresponding variables,
+        if they exist in the current scope.
+        """
+        engine = self
+        class ObjectReducer(ast.NodeTransformer):
+            def visit_Call(self, node):
+                # Refactor DVC object methods (ie. onUpdate)
+                if (
+                    isinstance(node.func, ast.Attribute) and
+                    isinstance(node.func.value, ast.Name) and
+                    engine.is_dvc_object(node) and
+                    node.func.attr == 'onUpdate'
+                ):
+                    engine.changed = True
+                    return ast.Pass()
+                return node
+
+            def visit_Attribute(self, node):
+                # Replace DVC variable objects with indexed value, if applicable
+                if (engine.is_dvc_object(node.value)):
+                    for key, value in zip(node.value.keys, node.value.values):
+                        if key.value == node.attr:
+                            engine.changed = True
+                            return value
+                return node
+
+        reducer = ObjectReducer()
+        reducer.visit(self.ast)
+
     
     def evaluate_expressions(self):
         def replace_node(node):
@@ -268,7 +290,7 @@ class PythonEngine:
             iterations += 1
 
             self.replace_feature_flags()
-        #     self.reduceObjects()
+            self.reduce_objects()
         #     self.var_assignments = self.getVariableMap()
         #     self.pruneVarReferences()
         #     self.evaluateExpressions()
