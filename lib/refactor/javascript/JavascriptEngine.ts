@@ -1,5 +1,5 @@
 import * as babelParser from '@babel/parser'
-import { RefactorEngine } from '../RefactorEngine'
+import { RefactorEngine } from './RefactorEngine'
 
 export class JavascriptEngine extends RefactorEngine {
     sdkMethods: RefactorEngine['sdkMethods'] = {

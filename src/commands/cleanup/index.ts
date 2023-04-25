@@ -5,10 +5,10 @@ import inquirer from 'inquirer'
 import { lsFiles } from '../../utils/git/ls-files'
 import Base from '../base'
 import VarAliasFlag, { getVariableAliases } from '../../flags/var-alias'
-import { EngineOptions } from '../../utils/refactor/RefactorEngine'
 import { Variable } from './types'
 import { ENGINES } from '../../utils/refactor'
 import { variablePrompt, variablePromptNoApi, variableTypePrompt, variableValuePrompt } from '../../ui/prompts'
+import { spawn } from 'child_process'
 
 export default class Cleanup extends Base {
     static hidden = false
@@ -121,20 +121,23 @@ export default class Cleanup extends Base {
             return
         }
 
-        files.forEach((filepath) => {
+        files.forEach((filepathToRefactor) => {
             const options = {
                 output: flags.output || 'file',
                 aliases
-            } as EngineOptions
+            }
 
-            const fileExtension = filepath?.split('.').pop() ?? ''
+            const fileExtension = filepathToRefactor?.split('.').pop() ?? ''
             if (!ENGINES[fileExtension]) return
-            ENGINES[fileExtension].forEach((RefactorEngine) => {
+            ENGINES[fileExtension].forEach(([command, engineFilePath]) => {
                 try {
-                    const engine = new RefactorEngine(filepath, variable, options)
-                    engine.refactor()
+                    const engineArgs = [filepathToRefactor, JSON.stringify(variable), JSON.stringify(options)]
+                    const childProcess = spawn(command, [engineFilePath, ...engineArgs])
+                    childProcess.stdout.on('data', (msg) => console.log(msg.toString()))
+                    childProcess.stdout.on('message', (msg) => console.log(msg.toString()))
+                    childProcess.stdout.on('error', (msg) => console.error(msg.toString()))
                 } catch (err: any) {
-                    console.warn(chalk.yellow(`Error refactoring ${filepath}`))
+                    console.warn(chalk.yellow(`Error refactoring ${filepathToRefactor}`))
                     console.warn(`\t${err.message}`)
                 }
             })

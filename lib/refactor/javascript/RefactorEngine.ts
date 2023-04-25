@@ -3,7 +3,7 @@ import * as recast from 'recast'
 import estraverse from 'estraverse'
 import chalk from 'chalk'
 import { Literal, Expression, Identifier, ObjectExpression, Property } from 'estree'
-import { Variable } from '../../commands/cleanup/types'
+import { Variable } from '../../../src/commands/cleanup/types'
 import { getCallExpression, isMemberExpression } from './utils'
 
 export type EngineOptions = {
