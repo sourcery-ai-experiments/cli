@@ -1,6 +1,6 @@
-import { Command, Flags } from '@oclif/core'
+import { Flags } from '@oclif/core'
 import { UserConfigFromFile } from '../../types/configFile'
-import { fetchProjects } from '../../api/projects'
+import { Project, fetchProjects } from '../../api/projects'
 import Base from '../base'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
@@ -51,4 +51,5 @@ export default class ProjectsCurrent extends Base {
       const loadedConfig = load(userConfigYaml) as UserConfigFromFile
       return loadedConfig || {}
   }
+
 }
