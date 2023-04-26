@@ -3,7 +3,6 @@ from typing import Dict, Union, Any
 from enum import Enum
 import ast
 import astor
-import os
 
 VariableValue = Union[str, bool, int, Dict[str, Any]]
 VariableType = Enum('VariableType', ['String', 'Boolean', 'Number', 'JSON'])
@@ -78,6 +77,8 @@ class PythonEngine:
         if operator == 'And()':
             return expression if literal.value else PythonEngine.dvc_literal(ast.Constant(False))
         elif operator == 'Or()':
+            return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
+        elif operator == 'Eq()':
             return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
 
     @staticmethod
@@ -232,6 +233,30 @@ class PythonEngine:
             def visit_BoolOp(self, node):
                 if engine.is_dvc_literal(node.values[0]) or engine.is_dvc_literal(node.values[1]):
                     value = engine.reduce_logical_expression(node.values[0], node.values[1], ast.dump(node.op))
+                    if value is not None:
+                        engine.changed = True
+                        return engine.dvc_literal(value)
+                return node
+            def visit_BinOp(self, node) -> Any:
+                if engine.is_dvc_literal(node.left) or engine.is_dvc_literal(node.right):
+                    value = engine.reduce_binary_expression(node.left, node.right, ast.dump(node.op))
+                    if value is not None:
+                        engine.changed = True
+                        return engine.dvc_literal(value)
+                return node
+            def visit_UnaryOp(self, node) -> Any:
+                if isinstance(node.operand, ast.Constant):
+                    value =  engine.dvc_literal(ast.Constant(not node.operand.value))
+                    if value is not None:
+                        engine.changed = True
+                        return engine.dvc_literal(value)
+                return node
+            def visit_Compare(self, node) -> Any:
+                if engine.is_dvc_literal(node.left) or engine.is_dvc_literal(node.comparators[0].value):
+                    if isinstance(node.ops[0], ast.Eq):
+                        value = engine.reduce_logical_expression(node.left, node.comparators[0], ast.dump(node.ops[0]))
+                    else:
+                        value = engine.reduce_binary_expression(node.left, node.comparators[0], ast.dump(node.ops[0]))
                     if value is not None:
                         engine.changed = True
                         return engine.dvc_literal(value)
