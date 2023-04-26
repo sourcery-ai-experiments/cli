@@ -225,55 +225,40 @@ class PythonEngine:
 
     
     def evaluate_expressions(self):
-        def replace_node(node):
-            updated_node = None
-            if isinstance(node, ast.BoolOp):
-                expression1 = self.get_assignment_value_if_set(self, node.values[0])
-                expression2 = self.get_assignment_value_if_set(self, node.values[1])
-
-                if isinstance(expression1, DVCLiteral):
-                    updated_node = self.reduce_logical_expression(
-                        self, expression1, expression2, node.op)
-                elif isinstance(expression2, DVCLiteral):
-                    updated_node = self.reduce_logical_expression(
-                        self, expression2, expression1, node.op)
-
-            elif isinstance(node, ast.BinOp):
-                expression1 = self.get_assignment_value_if_set(self, node.left)
-                expression2 = self.get_assignment_value_if_set(self, node.right)
-
-                if isinstance(expression1, DVCLiteral):
-                    updated_node = self.reduce_binary_expression(
-                        expression1, expression2, node.op)
-                elif isinstance(expression2, DVCLiteral):
-                    updated_node = self.reduce_binary_expression(
-                        expression2, expression1, node.op)
-
-            elif isinstance(node, ast.UnaryOp) and isinstance(
-                    node.op, ast.Not):
-                node_argument = self.get_assignment_value_if_set(self, node.operand)
-
-                if isinstance(node_argument, DVCLiteral):
-                    literal_argument = node_argument
-                    updated_node = ast.parse(
-                        str(not literal_argument.value)).body[0].value
-
-            if updated_node:
-                engine.changed = True
-                return updated_node
-
+        """
+        Evaluate any expressions that can be reduced to a single value
+        """
         engine = self
-        ast_node = ast.parse(engine.code)
-        for node in ast.walk(ast_node):
-            if isinstance(node, ast.BoolOp) or isinstance(
-                    node, ast.BinOp) or (isinstance(node, ast.UnaryOp)
-                                         and isinstance(node.op, ast.Not)):
-                updated_node = replace_node(node)
-                if updated_node:
-                    ast.copy_location(updated_node, node)
-                    ast.fix_missing_locations(updated_node)
+        class NodeTraverse(ast.NodeTransformer):
+            def visit_Expr(self, node):
+                inner_node = ast.parse(node.value.args[0])
 
-        engine.ast = ast_node
+                if isinstance(inner_node, ast.BoolOp):
+                    if isinstance(inner_node.values[0], ast.Constant):
+                        value = engine.reduce_logical_expression(inner_node.values[0].value, inner_node.values[1], inner_node.op)
+                        if value is not None:
+                            engine.changed = True
+                            return engine.literal(value)
+                elif isinstance(inner_node, ast.BinOp):
+                    if isinstance(inner_node.left, ast.Constant):
+                        value = engine.reduce_binary_expression(inner_node.left.value, inner_node.right, inner_node.op)
+                        if value is not None:
+                            engine.changed = True
+                            return engine.literal(value)
+                    elif isinstance(inner_node.right, ast.Constant):
+                        value = engine.reduce_binary_expression(inner_node.right.value, inner_node.left, inner_node.op)
+                        if value is not None:
+                            engine.changed = True
+                            return engine.literal(value)
+                elif isinstance(inner_node, ast.UnaryOp):
+                    if isinstance(inner_node.operand, ast.Constant):
+                        value = engine.reduce_unary_expression(inner_node.operand.value, inner_node.op)
+                        if value is not None:
+                            engine.changed = True
+                            return engine.literal(value)
+                return node
+
+        NodeTraverse().visit(self.ast)
 
     def reduce_if_statements(self):
 
@@ -301,7 +286,7 @@ class PythonEngine:
 
             node.body = new_body
 
-        tree = self.parser.parse(self.source)
+        tree = self.ast
         visitor = ast.NodeTransformer()
 
         visitor.visit(tree)
@@ -355,8 +340,8 @@ class PythonEngine:
             self.reduce_objects()
             self.var_assignments = self.get_variable_map()
             self.prune_variable_references()
-        #     self.evaluateExpressions()
-        #     self.reduceIfStatements()
+            self.evaluate_expressions()
+            # self.reduce_if_statements()
             if self.changed:
                 self.file_refactored = True
 
