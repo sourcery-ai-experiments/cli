@@ -19,7 +19,9 @@ export default class UpdateProject extends Base {
       color: Flags.string({ description: 'Project color (Hex color code)' }),
   };
 
-  static args = [{ name: 'projectKey', required: false }];
+  static args = [
+      { name: 'projectKey', required: false, description: 'The project key' }
+  ]
 
   authRequired = true;
 
@@ -95,6 +97,7 @@ export default class UpdateProject extends Base {
           optIn,
       }
   }
+  
   private getCurrentProjectKey(): string | undefined {
       const configPath = getConfigPath()
       const userConfig = loadUserConfigFromFile(configPath)

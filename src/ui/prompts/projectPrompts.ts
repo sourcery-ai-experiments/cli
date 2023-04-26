@@ -1,5 +1,5 @@
 import inquirer from 'inquirer'
-import { ProjectSettings, OptInSettings, EdgeDBSettings } from '../../api/projectSettings'
+import { ProjectSettings, OptInSettings, EdgeDBSettings, PoweredByAlignment } from '../../api/projectSettings'
 
 export interface CurrentSettings {
   edgeDB: { enabled?: boolean };
@@ -35,62 +35,47 @@ export const settingsPrompt = async (currentSettings: CurrentSettings)
         edgeDBEnabled = { enabled }
     }
 
-    let optIn: Partial<OptInSettings> = {}
+    const optIn: Partial<OptInSettings> = {}
     if (chooseSettings.selectedSettings.includes('optIn')) {
-        optIn = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'title',
-                message: 'Opt-in title:',
-            },
-            {
-                type: 'input',
-                name: 'description',
-                message: 'Opt-in description:',
-            },
-            {
-                type: 'confirm',
-                name: 'enabled',
-                message: 'Enable opt-in?',
-            },
-            {
-                type: 'input',
-                name: 'imageURL',
-                message: 'Image URL:',
-            },
-            {
-                type: 'confirm',
-                name: 'modifyAlignment',
-                message: 'Do you want to modify the poweredByAlignment setting?',
-                when: (answers) => answers.enabled === true,
-            },
-            {
-                type: 'list',
-                name: 'poweredByAlignment',
-                message: 'Choose poweredByAlignment:',
-                choices: ['left', 'center', 'right', 'hidden'],
-                when: (answers) => answers.modifyAlignment === true,
-            },
-        ])
+        const optInSettingsToUpdate = await inquirer.prompt({
+            type: 'checkbox',
+            name: 'optInSettings',
+            message: 'Select the opt-in settings you want to modify:',
+            choices: [
+                { name: 'title', value: 'title' },
+                { name: 'description', value: 'description' },
+                { name: 'enabled', value: 'enabled' },
+                { name: 'imageURL', value: 'imageURL' },
+                { name: 'poweredByAlignment', value: 'poweredByAlignment' },
+            ],
+        })
 
-        const colors = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'primary',
-                message: 'Primary color (Hex color code):',
-            },
-            {
-                type: 'input',
-                name: 'secondary',
-                message: 'Secondary color (Hex color code):',
-            },
-        ])
-
-        optIn = { ...optIn, colors }
-    }
-
-    return {
-        edgeDB: edgeDBEnabled,
-        optIn: optIn as OptInSettings,
+        for (const setting of optInSettingsToUpdate.optInSettings) {
+            const currentValue = currentSettings.optIn[setting as keyof OptInSettings] || ''
+          
+            let prompt: inquirer.Question<inquirer.Answers>
+          
+            if (setting === 'enabled' || setting === 'poweredByAlignment') {
+                prompt = {
+                    type: 'confirm',
+                    name: setting,
+                    message: `${setting.charAt(0).toUpperCase()}${setting.slice(1)} (current: ${currentValue}):`,
+                } as inquirer.ConfirmQuestion<inquirer.Answers>
+            } else {
+                prompt = {
+                    type: 'input',
+                    name: setting,
+                    message: `${setting.charAt(0).toUpperCase()}${setting.slice(1)} (current: ${currentValue}):`,
+                } as inquirer.InputQuestion<inquirer.Answers>
+            }
+          
+            if (setting === 'poweredByAlignment') {
+                (prompt as inquirer.ListQuestion<inquirer.Answers>).type = 'list';
+                (prompt as inquirer.ListQuestion<inquirer.Answers>).choices = Object.values(PoweredByAlignment)
+            }
+          
+            const answer = await inquirer.prompt([prompt])
+            optIn[setting as keyof OptInSettings] = answer[setting]
+        }
     }
 }

@@ -5,9 +5,10 @@ import {
     IsOptional,
     IsString,
     IsUrl,
-    ValidateNested,
+    ValidateNested
 } from 'class-validator'
-  
+import { Type } from 'class-transformer'
+
 export class EdgeDBSettings {
     @IsBoolean()
     @IsOptional()
@@ -32,35 +33,35 @@ export class ColorSettings {
 }
   
 export class OptInSettings {
-    @IsString()
-    @IsNotEmpty()
-    title: string;
-  
-    @IsString()
-    @IsNotEmpty()
-    description: string;
-  
-    @IsBoolean()
-    enabled: boolean;
-  
-    @IsUrl()
-    imageURL: string;
-  
-    @ValidateNested()
-    colors: ColorSettings;
-  
-    @IsEnum(PoweredByAlignment)
-    poweredByAlignment: PoweredByAlignment;
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-    @IsOptional()
-    @IsBoolean()
-    required?: boolean;
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsBoolean()
+  enabled: boolean;
+
+  @IsUrl()
+  imageURL: string;
+
+  @ValidateNested()
+  @Type(() => ColorSettings)
+  colors: ColorSettings;
+
+  @IsEnum(PoweredByAlignment)
+  poweredByAlignment: PoweredByAlignment;
+
+  @IsOptional()
+  @IsBoolean()
+  required?: boolean;
 }
 
 export class ProjectSettings {
     @ValidateNested()
     edgeDB: EdgeDBSettings;
-  
-    @ValidateNested()
+    
     optIn: Partial<OptInSettings>;
 }

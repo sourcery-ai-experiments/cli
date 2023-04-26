@@ -1,10 +1,7 @@
 import { Flags } from '@oclif/core'
-import { UserConfigFromFile } from '../../types/configFile'
-import { Project, fetchProjects } from '../../api/projects'
+import { fetchProjects } from '../../api/projects'
 import Base from '../base'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
-import { load } from 'js-yaml'
+import { getConfigPath, loadUserConfigFromFile } from '../../utils/config/configUtils'
 
 export default class ProjectsCurrent extends Base {
   static description = 'Display the current project key'
@@ -18,8 +15,8 @@ export default class ProjectsCurrent extends Base {
       const { flags } = await this.parse(ProjectsCurrent) // Add this line to parse the input flags
   
       try {
-          const configPath = this.getConfigPath()
-          const userConfig = this.loadUserConfigFromFile(configPath)
+          const configPath = getConfigPath()
+          const userConfig = loadUserConfigFromFile(configPath)
           if (userConfig && userConfig.project) {
               this.log(`Current project key: ${userConfig.project}`)
               if (flags.verbose) { // Replace `ProjectsCurrent.flags.verbose` with `flags.verbose`
@@ -39,17 +36,4 @@ export default class ProjectsCurrent extends Base {
           this.log('Error while loading configuration: ', (error as Error).message)
       }
   }
-  
-  private getConfigPath(): string {
-      const defaultConfigPath = resolve('.devcycle/config.yaml')
-      const savedConfigPath = process.env.CONFIG_PATH ? resolve(process.env.CONFIG_PATH) : defaultConfigPath
-      return savedConfigPath
-  }
-
-  private loadUserConfigFromFile(configPath: string): UserConfigFromFile {
-      const userConfigYaml = readFileSync(configPath, 'utf8')
-      const loadedConfig = load(userConfigYaml) as UserConfigFromFile
-      return loadedConfig || {}
-  }
-
 }
