@@ -267,13 +267,16 @@ class PythonEngine:
         engine = self
         class NodeTraverse(ast.NodeTransformer):
             def handle_if(self, node):
+                value = None
                 if engine.is_dvc_literal(node.test):
-                    engine.changed = True
-                    return node.body if node.test.value else node.orelse
+                    value = node.test.value
                 # Non-boolean values are referenced, not replaced. Check if they are assigned to a value
-                if isinstance(node.test, ast.Name) and node.test.id in engine.var_assignments:
+                elif isinstance(node.test, ast.Name) and node.test.id in engine.var_assignments:
+                    value = engine.var_assignments[node.test.id]['value']
+
+                if value is not None:
                     engine.changed = True
-                    return node.body if engine.var_assignments[node.test.id]['value'] else node.orelse
+                    return node.body if value else node.orelse
                 return node
 
             def visit_If(self, node):
