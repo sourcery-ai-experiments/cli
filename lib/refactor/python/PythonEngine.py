@@ -69,27 +69,17 @@ class PythonEngine:
         return node
 
     @staticmethod
-    def reduce_logical_expression(literal: ast.Constant, expression: ast.Expression, operator: str) -> Union[ast.Constant, None]:
+    def reduce_logical_expression(dvc_literal: ast.Constant, expression: ast.Expression, operator: str) -> Union[ast.Constant, None]:
         if operator == 'And()':
-            return expression if literal.value else PythonEngine.dvc_literal(ast.Constant(False))
+            return expression if dvc_literal.value else ast.Constant(False)
         elif operator == 'Or()':
-            return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
+            return ast.Constant(True) if dvc_literal.value else expression
         elif operator == 'Eq()' and isinstance(expression, ast.Constant):
-            return PythonEngine.dvc_literal(ast.Constant(literal.value == expression.value))
-
-    @staticmethod
-    def reduce_binary_expression(literal_value: Union[int, str, bool], expression: ast.Expr, operator: str) -> Union[bool, None]:
-        if not isinstance(expression, ast.Constant):
-            return None
-
-        if operator == '==':
-            return literal_value == expression.value
-        elif operator == '===':
-            return literal_value is expression.value
+            return ast.Constant(dvc_literal.value == expression.value)
     
     def get_assignment_value_if_set(self, expression):
         if isinstance(expression, ast.Name) and expression.id in self.var_assignments:
-            return self.var_assignments[expression.id].value
+            return self.var_assignments[expression.id]['value']
         else:
             return expression
 
@@ -226,36 +216,46 @@ class PythonEngine:
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
+            def compare_and_reduce_values(self, left_value, right_value, operator):
+                value = None
+                if engine.is_dvc_literal(left_value):
+                    value = engine.reduce_logical_expression(left_value, right_value, operator)
+                elif engine.is_dvc_literal(right_value):
+                    value = engine.reduce_logical_expression(right_value, left_value, operator)
+
+                if value is not None:
+                    return [engine.dvc_literal(value)]
+                return [left_value, right_value]
+                
             def visit_BoolOp(self, node):
-                if engine.is_dvc_literal(node.values[0]) or engine.is_dvc_literal(node.values[1]):
-                    value = engine.reduce_logical_expression(node.values[0], node.values[1], ast.dump(node.op))
-                    if value is not None:
-                        engine.changed = True
-                        return engine.dvc_literal(value)
+                left_value = engine.get_assignment_value_if_set(node.values[0])
+                right_value = engine.get_assignment_value_if_set(node.values[1])
+
+                reduced_values = self.compare_and_reduce_values(left_value, right_value, ast.dump(node.op))
+                if len(reduced_values) == 1:
+                    engine.changed = True
+                node.values = reduced_values + node.values[2:]
+
+                if len(node.values) == 1:
+                    return engine.dvc_literal(node.values[0])
                 return node
-            def visit_BinOp(self, node) -> Any:
-                if engine.is_dvc_literal(node.left) or engine.is_dvc_literal(node.right):
-                    value = engine.reduce_binary_expression(node.left, node.right, ast.dump(node.op))
-                    if value is not None:
-                        engine.changed = True
-                        return engine.dvc_literal(value)
+
+            def visit_Compare(self, node):
+                left_value = engine.get_assignment_value_if_set(node.left)
+                right_value = engine.get_assignment_value_if_set(node.comparators[0])
+
+                reduced_values = self.compare_and_reduce_values(left_value, right_value, ast.dump(node.ops[0]))
+                if len(reduced_values) == 1:
+                    engine.changed = True
+                    return engine.dvc_literal(reduced_values[0])
                 return node
-            def visit_UnaryOp(self, node) -> Any:
-                if isinstance(node.operand, ast.Constant):
-                    value =  engine.dvc_literal(ast.Constant(not node.operand.value))
-                    if value is not None:
-                        engine.changed = True
-                        return engine.dvc_literal(value)
-                return node
-            def visit_Compare(self, node) -> Any:
-                if engine.is_dvc_literal(node.left) or engine.is_dvc_literal(node.comparators[0].value):
-                    if isinstance(node.ops[0], ast.Eq):
-                        value = engine.reduce_logical_expression(node.left, node.comparators[0], ast.dump(node.ops[0]))
-                    else:
-                        value = engine.reduce_binary_expression(node.left, node.comparators[0], ast.dump(node.ops[0]))
-                    if value is not None:
-                        engine.changed = True
-                        return engine.dvc_literal(value)
+
+            # Unary operators (ex. not)
+            def visit_UnaryOp(self, node):
+                value = engine.get_assignment_value_if_set(node.operand)
+                if engine.is_dvc_literal(value):
+                    engine.changed = True
+                    return engine.dvc_literal(ast.Constant(not value.value))
                 return node
 
         NodeTraverse().visit(self.ast)
