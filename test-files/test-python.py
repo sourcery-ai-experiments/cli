@@ -24,9 +24,12 @@ try:
   variable_value = dvc.variable(user, 'show-discord-button', False).value
 
   # Use receieved Value
-  if variable.value:
+  if variable.value == True:
     # Put feature code here, or launch feature from here
-    print('variable.value is truthy')
+    print('variable.value is True')
+  elif variable.value == 7:
+    # Put feature code here, or launch feature from here
+    print('variable.value is 7')
   else:
     # Put feature code here, or launch feature from here
     print('variable.value is falsy')
