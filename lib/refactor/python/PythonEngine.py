@@ -138,18 +138,6 @@ class PythonEngine:
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
-            def visit_Call(self, node):
-                # Refactor DVC object methods (ie. onUpdate)
-                if (
-                    isinstance(node.func, ast.Attribute) and
-                    isinstance(node.func.value, ast.Name) and
-                    engine.is_dvc_object(node) and
-                    node.func.attr == 'onUpdate'
-                ):
-                    engine.changed = True
-                    return ast.Pass()
-                return node
-
             def visit_Attribute(self, node):
                 # Replace DVC variable objects with indexed value, if applicable
                 if (engine.is_dvc_object(node.value)):

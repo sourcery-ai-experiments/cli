@@ -33,7 +33,5 @@ try:
 
   new_var = 'hello' if variable_value else 'goodbye'
 
-  variable.onUpdate(lambda v: print('Variable updated: ' + v.key + ' ' + str(v.value)))
-
 except ApiException as e:
   print("Exception when calling DVCClient->variable: %s" %e)
