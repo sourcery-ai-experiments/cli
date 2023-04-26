@@ -8,10 +8,6 @@ VariableValue = Union[str, bool, int, Dict[str, Any]]
 VariableType = Enum('VariableType', ['String', 'Boolean', 'Number', 'JSON'])
 Variable = Dict[str, Union[VariableValue, VariableType]]
 
-class DVCLiteral:
-    def __init__(self, value):
-        self.value = value
-
 class PythonEngine:
     sdk_methods = {
         'variable': 'variable'
@@ -73,13 +69,13 @@ class PythonEngine:
         return node
 
     @staticmethod
-    def reduce_logical_expression(literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
+    def reduce_logical_expression(literal: ast.Constant, expression: ast.Expression, operator: str) -> Union[ast.Constant, None]:
         if operator == 'And()':
             return expression if literal.value else PythonEngine.dvc_literal(ast.Constant(False))
         elif operator == 'Or()':
             return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
-        elif operator == 'Eq()':
-            return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
+        elif operator == 'Eq()' and isinstance(expression, ast.Constant):
+            return PythonEngine.dvc_literal(ast.Constant(literal.value == expression.value))
 
     @staticmethod
     def reduce_binary_expression(literal_value: Union[int, str, bool], expression: ast.Expr, operator: str) -> Union[bool, None]:
