@@ -34,6 +34,11 @@ try:
     # Put feature code here, or launch feature from here
     print('variable.value is falsy')
 
+  if variable_value and True:
+    print('AND variable_value is True')
+  if variable_value or False:
+    print('OR variable_value is True')
+
   new_var = 'hello' if variable_value else 'goodbye'
 
 except ApiException as e:
