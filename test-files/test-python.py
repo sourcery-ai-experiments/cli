@@ -38,8 +38,13 @@ try:
     print('AND variable_value is True')
   if variable_value or False:
     print('OR variable_value is True')
+  if True == True:
+    print('This shouldn\'t change')
+  if variable_value == 7:
+    print('variable_value is 7')
 
   new_var = 'hello' if variable_value else 'goodbye'
+  new_var2 = 'hello' if variable_value == 7 else 'goodbye'
 
 except ApiException as e:
   print("Exception when calling DVCClient->variable: %s" %e)

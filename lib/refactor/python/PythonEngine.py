@@ -76,9 +76,9 @@ class PythonEngine:
     @staticmethod
     def reduce_logical_expression(literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
         if operator == 'And()':
-            return expression if literal.value else PythonEngine.dvc_literal(False)
+            return expression if literal.value else PythonEngine.dvc_literal(ast.Constant(False))
         elif operator == 'Or()':
-            return PythonEngine.dvc_literal(True) if literal.value else expression
+            return PythonEngine.dvc_literal(ast.Constant(True)) if literal.value else expression
 
     @staticmethod
     def reduce_binary_expression(literal_value: Union[int, str, bool], expression: ast.Expr, operator: str) -> Union[bool, None]:
@@ -155,6 +155,7 @@ class PythonEngine:
         engine = self
         class NodeTraverse(ast.NodeTransformer):
             def visit_Assign(self, node):
+                super().generic_visit(node)
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         if engine.is_dvc_literal(node.value):
@@ -170,6 +171,7 @@ class PythonEngine:
                 return node
 
             def visit_Expr(self, node):
+                super().generic_visit(node)
                 if isinstance(node.value, ast.Assign):
                     for target in node.value.targets:
                         if isinstance(target, ast.Name):
@@ -204,6 +206,7 @@ class PythonEngine:
                     ):
                         engine.changed = True
                         return None
+                super().generic_visit(node)
                 return node
 
             # Replace node with variable value if necessary
@@ -226,8 +229,7 @@ class PythonEngine:
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
-            def visit_BoolOp(self, node) -> Any:
-                print(ast.dump(node))
+            def visit_BoolOp(self, node):
                 if engine.is_dvc_literal(node.values[0]) or engine.is_dvc_literal(node.values[1]):
                     value = engine.reduce_logical_expression(node.values[0], node.values[1], ast.dump(node.op))
                     if value is not None:
@@ -238,46 +240,27 @@ class PythonEngine:
         NodeTraverse().visit(self.ast)
 
     def reduce_if_statements(self):
+        """
+        Reduce if statements that are always true/false
+        """
+        engine = self
+        class NodeTraverse(ast.NodeTransformer):
+            def handle_if(self, node):
+                if engine.is_dvc_literal(node.test):
+                    engine.changed = True
+                    if node.test.value == True:
+                        return node.body
+                    elif node.test.value == False:
+                        return node.orelse
+                return node
 
-        def visit_if(node):
-            test_value = self.get_assignment_value_if_set(self, node.test)
+            def visit_If(self, node):
+                return self.handle_if(node)
 
-            if isinstance(test_value, ast.Constant):
-                self.changed = True
+            def visit_IfExp(self, node):
+                return self.handle_if(node)
 
-                if test_value.value:
-                    return node.body
-                elif node.orelse is None:
-                    return ast.Pass()
-                else:
-                    return node.orelse
-
-        def flatten_blocks(node):
-            new_body = []
-
-            for stmt in node.body:
-                if isinstance(stmt, ast.If):
-                    new_body.extend(flatten_blocks(stmt))
-                else:
-                    new_body.append(stmt)
-
-            node.body = new_body
-
-        tree = self.ast
-        visitor = ast.NodeTransformer()
-
-        visitor.visit(tree)
-        visitor.visit(ast.fix_missing_locations(tree))
-
-        for node in ast.walk(tree):
-            if isinstance(node, ast.If):
-                new_node = visit_if(node)
-
-                if new_node is not None:
-                    node.parent.body = new_node
-
-        flatten_blocks(tree)
-        return ast.unparse(tree)
+        NodeTraverse().visit(self.ast)
     
     def parse_ast(self):
         try:
@@ -318,7 +301,7 @@ class PythonEngine:
             self.var_assignments = self.get_variable_map()
             self.prune_variable_references()
             self.evaluate_expressions()
-            # self.reduce_if_statements()
+            self.reduce_if_statements()
             if self.changed:
                 self.file_refactored = True
 
