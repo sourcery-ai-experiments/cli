@@ -46,7 +46,7 @@ class PythonEngine:
         if (variable['type'] == 'String'):
             value = '%s' % variable['value']
         elif (variable['type'] == 'Boolean'):
-            value = variable['value'] == False if 'false' else True
+            value = False if variable['value'].lower() == 'false' else True
         elif (variable['type'] == 'Number'):
             value = float(variable['value'])
 
@@ -186,21 +186,54 @@ class PythonEngine:
                 return node
 
             def visit_Expr(self, node):
-                if (isinstance(node.value, ast.Assign) and isinstance(node.value.targets[0], ast.Name)):
-                    if engine.is_dvc_literal(node.value.value):
-                        assignments[node.value.targets[0].id] = {
-                            'replace': isinstance(node.value.value.args[0].value, bool),
-                            'value': node.value.value.args[0].value
-                        }
-                    elif engine.is_dvc_object(node.value.value):
-                        assignments[node.value.targets[0].id] = {
-                            'replace': True,
-                            'value': node.value.value.args[0].keys
-                        }
+                if isinstance(node.value, ast.Assign):
+                    for target in node.value.targets:
+                        if isinstance(target, ast.Name):
+                            if engine.is_dvc_literal(node.value.value):
+                                assignments[target.id] = {
+                                    'replace': isinstance(node.value.value.args[0].value, bool),
+                                    'value': node.value.value.args[0].value
+                                }
+                            elif engine.is_dvc_object(node.value.value):
+                                assignments[target.id] = {
+                                    'replace': True,
+                                    'value': node.value.value.args[0].keys
+                                }
                 return node
 
         NodeTraverse().visit(self.ast)
         return assignments
+
+    def prune_variable_references(self):
+        """
+        Remove redundant variables by deleting declarations and replacing variable references
+        """
+        engine = self
+        class NodeTraverse(ast.NodeTransformer):
+            # Remove variable declaration if necessary
+            def visit_Assign(self, node):
+                for target in node.targets:
+                    if (
+                        isinstance(target, ast.Name) and
+                        target.id in engine.var_assignments and
+                        engine.var_assignments[target.id]['replace'] == True
+                    ):
+                        engine.changed = True
+                        return None
+                return node
+
+            # Replace node with variable value if necessary
+            def visit_Name(self, node):
+                if (
+                    node.id in engine.var_assignments and
+                    engine.var_assignments[node.id]['replace'] == True
+                ):
+                    engine.changed = True
+                    return engine.var_assignments[node.id]['value']
+                return node
+
+
+        NodeTraverse().visit(self.ast)
 
     
     def evaluate_expressions(self):
@@ -333,7 +366,7 @@ class PythonEngine:
             self.replace_feature_flags()
             self.reduce_objects()
             self.var_assignments = self.get_variable_map()
-        #     self.pruneVarReferences()
+            self.prune_variable_references()
         #     self.evaluateExpressions()
         #     self.reduceIfStatements()
             if self.changed:
