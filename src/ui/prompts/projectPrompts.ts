@@ -6,7 +6,8 @@ export interface CurrentSettings {
   optIn: Partial<OptInSettings>;
 }
 
-export const settingsPrompt = async (currentSettings: CurrentSettings): Promise<ProjectSettings | undefined> => {
+export const settingsPrompt = async (currentSettings: CurrentSettings)
+    : Promise<Partial<ProjectSettings> | undefined> => {
     const modifySettings = await inquirer.prompt({
         type: 'confirm',
         name: 'modifySettings',
@@ -90,6 +91,6 @@ export const settingsPrompt = async (currentSettings: CurrentSettings): Promise<
 
     return {
         edgeDB: edgeDBEnabled,
-        optIn,
+        optIn: optIn as OptInSettings,
     }
 }

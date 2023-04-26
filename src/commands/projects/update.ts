@@ -3,7 +3,7 @@ import { fetchProjects, Project, updateProject, UpdateProjectParams } from '../.
 import Base from '../base'
 import { CurrentSettings } from '../../ui/prompts/projectPrompts'
 import { descriptionPrompt, namePrompt, colorPrompt, settingsPrompt } from '../../ui/prompts'
-import { EdgeDBSettings, ProjectSettings } from '../../api/projectSettings'
+import { EdgeDBSettings, OptInSettings, ProjectSettings } from '../../api/projectSettings'
 import { getConfigPath, loadUserConfigFromFile } from '../../utils/config/configUtils'
 import inquirer from 'inquirer'
 
@@ -19,15 +19,40 @@ export default class UpdateProject extends Base {
       color: Flags.string({ description: 'Project color (Hex color code)' }),
   };
 
-  static args = [{ name: 'projectKey', required: true }];
+  static args = [{ name: 'projectKey', required: false }];
 
   authRequired = true;
 
   async run(): Promise<void> {
       const { args, flags } = await this.parse(UpdateProject)
 
-      const projectKey = args.projectKey || this.getCurrentProjectKey()
-  
+      let projectKey = args.projectKey
+
+      if (!projectKey) {
+          const currentProjectKey = this.getCurrentProjectKey()
+          console.log(currentProjectKey)
+          const useCurrentProjectKey = await inquirer.prompt({
+              type: 'confirm',
+              name: 'useCurrent',
+              message: `No project key provided. Would you like to use the current project key (${currentProjectKey})?`,
+          })
+
+          if (useCurrentProjectKey.useCurrent) {
+              projectKey = currentProjectKey
+          } else {
+              const enteredProjectKey = await inquirer.prompt({
+                  type: 'input',
+                  name: 'enteredKey',
+                  message: 'Please enter a project key:',
+                  validate: (value: string) => {
+                      if (value.trim()) return true
+                      return 'A valid project key is required.'
+                  },
+              })
+              projectKey = enteredProjectKey.enteredKey
+          }
+      }
+
       const currentProject = await this.getCurrentProject(projectKey)
       if (!currentProject) {
           this.writer.showResults(`Project with key ${projectKey} not found.`)
@@ -80,6 +105,7 @@ export default class UpdateProject extends Base {
       const projects = await fetchProjects(this.token)
       return projects.find((project) => project.key === projectKey) || null
   }
+  
   private async updateOption(option: string, currentProject: Project): Promise<Project> {
       const projectKey = currentProject.key
       switch (option) {
@@ -111,12 +137,13 @@ export default class UpdateProject extends Base {
           case 'optIn': {
               const currentSettings = this.getCurrentSettings(currentProject)
               const optInSettings = await settingsPrompt(currentSettings)
-            
+        
               if (optInSettings) {
+                  const { edgeDB, optIn } = optInSettings
                   return await updateProject(this.token, projectKey, {
                       settings: {
-                          edgeDB: currentProject.settings?.edgeDB ?? new EdgeDBSettings(),
-                          optIn: optInSettings.optIn,
+                          edgeDB: edgeDB ?? currentProject.settings?.edgeDB ?? new EdgeDBSettings(),
+                          optIn: optIn as OptInSettings,
                       },
                   })
               } else {
