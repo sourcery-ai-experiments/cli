@@ -72,17 +72,13 @@ class PythonEngine:
     def dvc_literal(node):
         node._created_by_dvc = True
         return node
-    
-    @staticmethod
-    def literal(value):
-        return DVCLiteral(value)
 
     @staticmethod
-    def reduce_logical_expression(self, literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
-        if operator == 'and':
-            return expression if literal.value else self.literal(False)
-        elif operator == 'or':
-            return self.literal(True) if literal.value else expression
+    def reduce_logical_expression(literal: DVCLiteral, expression: ast.Expression, operator: str) -> Union[DVCLiteral, ast.Expression]:
+        if operator == 'And()':
+            return expression if literal.value else PythonEngine.dvc_literal(False)
+        elif operator == 'Or()':
+            return PythonEngine.dvc_literal(True) if literal.value else expression
 
     @staticmethod
     def reduce_binary_expression(literal_value: Union[int, str, bool], expression: ast.Expr, operator: str) -> Union[bool, None]:
@@ -230,32 +226,13 @@ class PythonEngine:
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
-            def visit_Expr(self, node):
-                inner_node = ast.parse(node.value.args[0])
-
-                if isinstance(inner_node, ast.BoolOp):
-                    if isinstance(inner_node.values[0], ast.Constant):
-                        value = engine.reduce_logical_expression(inner_node.values[0].value, inner_node.values[1], inner_node.op)
-                        if value is not None:
-                            engine.changed = True
-                            return engine.literal(value)
-                elif isinstance(inner_node, ast.BinOp):
-                    if isinstance(inner_node.left, ast.Constant):
-                        value = engine.reduce_binary_expression(inner_node.left.value, inner_node.right, inner_node.op)
-                        if value is not None:
-                            engine.changed = True
-                            return engine.literal(value)
-                    elif isinstance(inner_node.right, ast.Constant):
-                        value = engine.reduce_binary_expression(inner_node.right.value, inner_node.left, inner_node.op)
-                        if value is not None:
-                            engine.changed = True
-                            return engine.literal(value)
-                elif isinstance(inner_node, ast.UnaryOp):
-                    if isinstance(inner_node.operand, ast.Constant):
-                        value = engine.reduce_unary_expression(inner_node.operand.value, inner_node.op)
-                        if value is not None:
-                            engine.changed = True
-                            return engine.literal(value)
+            def visit_BoolOp(self, node) -> Any:
+                print(ast.dump(node))
+                if engine.is_dvc_literal(node.values[0]) or engine.is_dvc_literal(node.values[1]):
+                    value = engine.reduce_logical_expression(node.values[0], node.values[1], ast.dump(node.op))
+                    if value is not None:
+                        engine.changed = True
+                        return engine.dvc_literal(value)
                 return node
 
         NodeTraverse().visit(self.ast)
