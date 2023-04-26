@@ -7,7 +7,7 @@ import {
     IsUrl,
     ValidateNested,
 } from 'class-validator'
-  
+
 export class EdgeDBSettings {
     @IsBoolean()
     @IsOptional()
