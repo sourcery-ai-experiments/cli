@@ -269,10 +269,11 @@ class PythonEngine:
             def handle_if(self, node):
                 if engine.is_dvc_literal(node.test):
                     engine.changed = True
-                    if node.test.value == True:
-                        return node.body
-                    elif node.test.value == False:
-                        return node.orelse
+                    return node.body if node.test.value else node.orelse
+                # Non-boolean values are referenced, not replaced. Check if they are assigned to a value
+                if isinstance(node.test, ast.Name) and node.test.id in engine.var_assignments:
+                    engine.changed = True
+                    return node.body if engine.var_assignments[node.test.id]['value'] else node.orelse
                 return node
 
             def visit_If(self, node):
