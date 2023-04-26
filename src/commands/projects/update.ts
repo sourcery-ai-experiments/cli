@@ -135,21 +135,21 @@ export default class UpdateProject extends Base {
               })
           }
           case 'optIn': {
-              const currentSettings = this.getCurrentSettings(currentProject)
-              const optInSettings = await settingsPrompt(currentSettings)
-        
-              if (optInSettings) {
-                  const { edgeDB, optIn } = optInSettings
-                  return await updateProject(this.token, projectKey, {
-                      settings: {
-                          edgeDB: edgeDB ?? currentProject.settings?.edgeDB ?? new EdgeDBSettings(),
-                          optIn: optIn as OptInSettings,
-                      },
-                  })
-              } else {
-                  this.writer.showResults(`No changes made to project ${projectKey}.`)
-                  return currentProject
-              }
+            const currentSettings = this.getCurrentSettings(currentProject)
+            const optInSettings = await settingsPrompt(currentSettings)
+          
+            if (optInSettings) {
+              const { edgeDB, optIn } = optInSettings
+              return await updateProject(this.token, projectKey, {
+                settings: {
+                  edgeDB: edgeDB ?? currentProject.settings?.edgeDB ?? new EdgeDBSettings(),
+                  optIn: optIn as OptInSettings,
+                },
+              })
+            } else {
+              this.writer.showResults(`No changes made to project ${projectKey}.`)
+              return currentProject
+            }
           }
           default:
               throw new Error('Invalid option selected.')

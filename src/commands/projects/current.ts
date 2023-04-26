@@ -1,6 +1,6 @@
 import { Flags } from '@oclif/core'
 import { UserConfigFromFile } from '../../types/configFile'
-import { Project, fetchProjects } from '../../api/projects'
+import { fetchProjects } from '../../api/projects'
 import Base from '../base'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
