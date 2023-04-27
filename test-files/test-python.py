@@ -76,6 +76,10 @@ try:
   new_var = 'hello' if variable_value else 'goodbye'
   new_var2 = 'hello' if variable_value == 7 else 'goodbye'
   new_var3 = 'hello' if variable_value < 7 else 'goodbye'
+  new_var4 = 'hello' if variable_value < 'foo' else 'goodbye'
+  new_var5 = 'hello' if variable_value > 7 else 'goodbye'
+  new_var6 = 'hello' if variable_value <= 7 else 'goodbye'
+  new_var7 = 'hello' if variable_value >= 7 else 'goodbye'
 
 except ApiException as e:
   print("Exception when calling DVCClient->variable: %s" %e)

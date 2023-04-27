@@ -69,13 +69,42 @@ class PythonEngine:
         return node
 
     @staticmethod
-    def reduce_logical_expression(dvc_literal: ast.Constant, expression: ast.Expression, operator: str) -> Union[ast.Constant, None]:
+    def reduce_logical_expression(left_value: ast.Expr, right_value: ast.Expr, operator: str) -> Union[ast.Constant, None]:
+        """
+        Accepts two values and an operator, and returns a single value if the expression can be reduced.
+        Returns None if the expression cannot be reduced.
+        """
+        # Determine which value, if any, was created by DVC
+        dvc_literal, expression = None, None
+        if PythonEngine.is_dvc_literal(left_value):
+            dvc_literal = left_value
+            expression = right_value
+        elif PythonEngine.is_dvc_literal(right_value):
+            dvc_literal = right_value
+            expression = left_value
+
+        if dvc_literal is None:
+            return None
+
         if operator == 'And()':
             return expression if dvc_literal.value else ast.Constant(False)
         elif operator == 'Or()':
             return ast.Constant(True) if dvc_literal.value else expression
-        elif operator == 'Eq()' and isinstance(expression, ast.Constant):
-            return ast.Constant(dvc_literal.value == expression.value)
+        
+        try:
+            if isinstance(expression, ast.Constant):
+                if operator == 'Eq()':
+                    return ast.Constant(left_value.value == right_value.value)
+                elif operator == 'Lt()':
+                    return ast.Constant(left_value.value < right_value.value)
+                elif operator == 'LtE()':
+                    return ast.Constant(left_value.value <= right_value.value)
+                elif operator == 'Gt()':
+                    return ast.Constant(left_value.value > right_value.value)
+                elif operator == 'GtE()':
+                    return ast.Constant(left_value.value >= right_value.value)
+        except:
+            return None
     
     def get_assignment_value_if_set(self, expression):
         if isinstance(expression, ast.Name) and expression.id in self.var_assignments:
@@ -215,26 +244,16 @@ class PythonEngine:
         Evaluate any expressions that can be reduced to a single value
         """
         engine = self
-        class NodeTraverse(ast.NodeTransformer):
-            def compare_and_reduce_values(self, left_value, right_value, operator):
-                value = None
-                if engine.is_dvc_literal(left_value):
-                    value = engine.reduce_logical_expression(left_value, right_value, operator)
-                elif engine.is_dvc_literal(right_value):
-                    value = engine.reduce_logical_expression(right_value, left_value, operator)
-
-                if value is not None:
-                    return [engine.dvc_literal(value)]
-                return [left_value, right_value]
-                
+        class NodeTraverse(ast.NodeTransformer):                
             def visit_BoolOp(self, node):
                 left_value = engine.get_assignment_value_if_set(node.values[0])
                 right_value = engine.get_assignment_value_if_set(node.values[1])
 
-                reduced_values = self.compare_and_reduce_values(left_value, right_value, ast.dump(node.op))
-                if len(reduced_values) == 1:
+                reduced_value = engine.reduce_logical_expression(left_value, right_value, ast.dump(node.op))
+                if reduced_value is not None:
                     engine.changed = True
-                node.values = reduced_values + node.values[2:]
+                    # In case expressions contains more than 2 values, only replace first 2
+                    node.values = [reduced_value] + node.values[2:]
 
                 if len(node.values) == 1:
                     return engine.dvc_literal(node.values[0])
@@ -244,10 +263,10 @@ class PythonEngine:
                 left_value = engine.get_assignment_value_if_set(node.left)
                 right_value = engine.get_assignment_value_if_set(node.comparators[0])
 
-                reduced_values = self.compare_and_reduce_values(left_value, right_value, ast.dump(node.ops[0]))
-                if len(reduced_values) == 1:
+                reduced_value = engine.reduce_logical_expression(left_value, right_value, ast.dump(node.ops[0]))
+                if reduced_value is not None:
                     engine.changed = True
-                    return engine.dvc_literal(reduced_values[0])
+                    return engine.dvc_literal(reduced_value)
                 return node
 
             # Unary operators (ex. not)
