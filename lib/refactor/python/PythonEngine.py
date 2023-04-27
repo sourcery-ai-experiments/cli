@@ -44,19 +44,24 @@ class PythonEngine:
             value = False if variable['value'].lower() == 'false' else True
         elif (variable['type'] == 'Number'):
             value = float(variable['value'])
+        elif (variable['type'] == 'JSON'):
+            value = ast.parse(str(variable['value'])).body[0].value
+
+        ast_value = value if variable['type'] == 'JSON' else ast.Constant(value)
+        ast_value._created_by_dvc = True
 
         dict = ast.Dict(
             keys=[
-                ast.Constant(value='key'),
-                ast.Constant(value='value'),
-                ast.Constant(value='defaultValue'),
-                ast.Constant(value='isDefaulted')
+                ast.Constant('key'),
+                ast.Constant('value'),
+                ast.Constant('defaultValue'),
+                ast.Constant('isDefaulted')
             ],
             values=[
-                ast.Constant(value=variable['key']),
-                ast.Constant(value=value),
-                ast.Constant(value=value),
-                ast.Constant(value=True)
+                ast.Constant(variable['key']),
+                ast_value,
+                ast_value,
+                ast.Constant(True)
             ]
         )
         dict._created_by_dvc = True
@@ -150,14 +155,21 @@ class PythonEngine:
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
-            def visit_Attribute(self, node):
+            def handle_attribute(self, node, attribute):
                 # Replace DVC variable objects with indexed value, if applicable
                 if (engine.is_dvc_object(node.value)):
                     for key, value in zip(node.value.keys, node.value.values):
-                        if key.value == node.attr:
+                        if key.value == attribute:
                             engine.changed = True
                             return engine.dvc_literal(value)
+                super().generic_visit(node)
                 return node
+
+            def visit_Attribute(self, node):
+                return self.handle_attribute(node, node.attr)
+
+            def visit_Subscript(self, node):
+                return self.handle_attribute(node, node.slice.value)
 
         NodeTraverse().visit(self.ast)
 
