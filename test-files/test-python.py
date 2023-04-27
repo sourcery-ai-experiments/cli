@@ -14,13 +14,13 @@ user = UserData(
   user_id='test'
 )
 
-key = 'show-discord-button' # Variable key
+MY_VARIABLE = 'show-discord-button' # Variable key
 
 try:
   # Fetch variable values using the identifier key, with a default value and user object
   # The default value can be of type string, boolean, number, or JSON
   variable = dvc.variable(user, 'show-discord-button', False)
-  variable2 = dvc.variable(user, key, False)
+  variable2 = dvc.variable(user, MY_VARIABLE, False)
   variable_value = dvc.variable(user, 'show-discord-button', False).value
   stringVariable = dvc.variable(user, 'string-var', 'default')
 
