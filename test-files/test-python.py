@@ -22,7 +22,10 @@ try:
   variable = dvc.variable(user, 'show-discord-button', False)
   variable2 = dvc.variable(user, key, False)
   variable_value = dvc.variable(user, 'show-discord-button', False).value
-  variable3 = dvc.variable(user, 'string-var', 'default')
+  stringVariable = dvc.variable(user, 'string-var', 'default')
+
+  numVariable = dvc.variable(user, 'num-var', 7)
+  jsonVariable = dvc.variable(user, 'json-var', {'key': 'value'})
 
   # Use receieved Value
   if variable.value == True:
@@ -47,12 +50,22 @@ try:
   if not variable_value:
     print('variable_value is False')
 
-  if variable3.value == 'hello':
-    print('variable3_value is hello')
-  elif variable3.value == 'goodbye':
-    print('variable3_value is goodbye')
+  if stringVariable.value == 'hello':
+    print('stringVariable value is hello')
+  elif stringVariable.value == 'goodbye':
+    print('stringVariable value is goodbye')
   else:
-    print('variable3_value is default')
+    print('stringVariable value is default')
+
+  if numVariable.value == 7:
+    print('numVariable value is 7')
+  else:
+    print('numVariable value is not 7')
+
+  if jsonVariable.value['key'] == 'value':
+    print('jsonVariable value is default')
+  else:
+    print('jsonVariable value is not defaulted')
 
 
   if not variable_value:
