@@ -226,6 +226,9 @@ export abstract class RefactorEngine {
         })
     }
 
+    /**
+     * Evaluate any expressions that can be reduced to a single value
+     */
     private evaluateExpressions = () => {
         const engine = this
 
@@ -374,7 +377,7 @@ export abstract class RefactorEngine {
     }
 
     /**
-     * Remove redundant variables by deleting declarations and replacing variable references
+     * Remove variable declarations and replace variable references
      */
     private pruneVarReferences() {
         const engine = this

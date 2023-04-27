@@ -145,8 +145,8 @@ class PythonEngine:
 
     def reduce_objects(self):
         """
-        Reduce object literals by replacing them with their corresponding variables,
-        if they exist in the current scope.
+        Replace DVC variable objects with indexed value, if applicable
+        ex. `{ value: 'foo' }.value` would be replaced with `'foo'`
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
@@ -208,7 +208,7 @@ class PythonEngine:
 
     def prune_variable_references(self):
         """
-        Remove redundant variables by deleting declarations and replacing variable references
+        Remove variable declarations and replace variable references
         """
         engine = self
         class NodeTraverse(ast.NodeTransformer):
