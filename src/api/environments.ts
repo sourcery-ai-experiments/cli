@@ -96,7 +96,6 @@ export const fetchEnvironments = async (token: string, project_id: string): Prom
             Authorization: token,
         },
     })
-
     return response.data
 }
 
@@ -106,6 +105,7 @@ export const fetchEnvironmentByKey = async (
     key: string
 ): Promise<Environment | null> => {
     const url = new URL(`/v1/projects/${project_id}/environments/${key}`, BASE_URL)
+    
     try {
         const response = await axios.get(url.href, {
             headers: {
@@ -113,14 +113,56 @@ export const fetchEnvironmentByKey = async (
                 Authorization: token,
             },
         })
+        console.log('Response:', response)
 
         return response.data
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
+        console.log('Response:', e)
+
         if (e.response?.status === 404) {
             return null
         }
         throw e
     }
 
+}
+
+export interface GenerateSdkTokensDto {
+    types: string[];
+}
+
+// Generate SDK keys
+export const generateSdkKeys = async (
+    token: string,
+    project_id: string,
+    environmentKey: string,
+    requestBody: GenerateSdkTokensDto,
+): Promise<Environment> => {
+    const url = new URL(`/v1/projects/${project_id}/environments/${environmentKey}/keys`, BASE_URL)
+    const response = await axios.post(url.href, requestBody, {
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: token,
+        },
+    })
+
+    return response.data
+}
+
+// Invalidate an SDK key
+export const invalidateSdkKey = async (
+    token: string,
+    project_id: string,
+    environmentKey: string,
+    key: string,
+): Promise<void> => {
+    const url = new URL(`/v1/projects/${project_id}/environments/${environmentKey}/keys/${key}`, BASE_URL)   
+    await axios.delete(url.href, {
+        
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: token,
+        },
+    })
 }

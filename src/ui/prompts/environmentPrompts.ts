@@ -10,18 +10,16 @@ type EnvironmentChoice = {
     value: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const environmentChoices = async (input: Record<string, any>):Promise<EnvironmentChoice[]> => {
-    const environments = await fetchEnvironments(input.token, input.projectKey)
+export const environmentChoices = async (token: string, projectKey: string): Promise<EnvironmentChoice[]> => {
+    const environments = await fetchEnvironments(token, projectKey)
     const choices = environments.map((environment: Environment) => {
         return {
             name: environment.name || environment.key,
-            value: environment._id
+            value: environment.key // Use the environment key as the value
         }
     })
     return choices
 }
-
 export const environmentPrompt = {
     name: '_environment',
     message: 'Which environment?',
