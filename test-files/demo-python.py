@@ -38,6 +38,9 @@ try:
   if str_var == 'foo' or str_var == 'bar' or str_var == 'baz':
     print('str_var is foo bar baz')
 
+  if num_var < 100 or num_var > 100:
+    print('num_var is not 100')
+
   new_var = 'hello' if my_variable_value else 'goodbye'
 
 except ApiException as e:
