@@ -269,6 +269,7 @@ class PythonEngine:
 
                 if len(node.values) == 1:
                     return engine.dvc_literal(node.values[0])
+                super().generic_visit(node)
                 return node
 
             def visit_Compare(self, node):
@@ -279,6 +280,7 @@ class PythonEngine:
                 if reduced_value is not None:
                     engine.changed = True
                     return engine.dvc_literal(reduced_value)
+                super().generic_visit(node)
                 return node
 
             # Unary operators (ex. not)
@@ -287,6 +289,7 @@ class PythonEngine:
                 if engine.is_dvc_literal(value):
                     engine.changed = True
                     return engine.dvc_literal(ast.Constant(not value.value))
+                super().generic_visit(node)
                 return node
 
         NodeTraverse().visit(self.ast)
