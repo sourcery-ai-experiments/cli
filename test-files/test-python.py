@@ -43,19 +43,19 @@ try:
   if variable_value or False:
     print('OR variable_value is True')
   if True == True:
-    print('This shouldn\'t change')
+    print('This shouldn\'t change')           # this shouldn't change
   if variable_value == 7:
     print('variable_value is 7')
 
   if not variable_value:
     print('variable_value is False')
 
-  if stringVariable.value == 'hello':
-    print('stringVariable value is hello')
-  elif stringVariable.value == 'goodbye':
-    print('stringVariable value is goodbye')
+  if stringVariable.value == 'hello':         # if stringVariable is hello inline comment
+    print('stringVariable value is hello')    #hello
+  elif stringVariable.value == 'goodbye':     # if stringVariable is goodbye inline comment
+    print('stringVariable value is goodbye')  #goodbye
   else:
-    print('stringVariable value is default')
+    print('stringVariable value is default')  #default
 
   if numVariable.value == 7:
     print('numVariable value is 7')
@@ -72,6 +72,8 @@ try:
     print('variable_value is Falsy')
   if not some_var:
     print('something is Falsy')
+
+  print("variable: %s" % stringVariable.value)  # this prints the variable value of stringVariable
 
   new_var = 'hello' if variable_value else 'goodbye'
   new_var2 = 'hello' if variable_value == 7 else 'goodbye'
