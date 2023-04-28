@@ -2,7 +2,7 @@
 from typing import Dict, Union, Any
 from enum import Enum
 import ast
-import astor
+import ast_comments
 
 VariableValue = Union[str, bool, int, Dict[str, Any]]
 VariableType = Enum('VariableType', ['String', 'Boolean', 'Number', 'JSON'])
@@ -320,17 +320,18 @@ class PythonEngine:
     
     def parse_ast(self):
         try:
-            parseOptions = {}
             with open(self.filepath, 'r') as file:
                 source_code = file.read()
-            self.ast = ast.parse(source_code, **parseOptions)
+            self.ast = ast_comments.parse(source_code)
+
         except Exception as err:
             print(f"Error parsing file {self.filepath}")
             print(f"\t{err}")
 
     def print_ast(self):
         try:
-            code = astor.to_source(self.ast)
+            code = ast_comments.unparse(self.ast)
+
             if self.output == 'console':
                 print(code)
             elif self.file_refactored:
