@@ -52,7 +52,7 @@ export default class ProjectsCurrent extends Base {
     }
 
     private getConfigPath(): string {
-        const defaultConfigPath = resolve('.devcycle/config.yaml')
+        const defaultConfigPath = resolve('.devcycle/config.yml')
         const savedConfigPath = process.env.CONFIG_PATH
             ? resolve(process.env.CONFIG_PATH)
             : defaultConfigPath

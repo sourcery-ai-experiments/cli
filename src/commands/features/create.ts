@@ -97,12 +97,31 @@ export default class CreateFeature extends CreateCommand<CreateFeatureParams> {
         defaultValueOn: string | boolean | number | Record<string, unknown>,
         defaultValueOff: string | boolean | number | Record<string, unknown>,
     ): Promise<void> {
+
+        let defaultValueOnParsed = defaultValueOn
+        let defaultValueOffParsed = defaultValueOff
+
+        if (variableParams.type === 'Boolean') {
+            defaultValueOnParsed = Boolean(defaultValueOn)
+            defaultValueOffParsed = Boolean(defaultValueOff)
+        }
+
+        if (variableParams.type === 'JSON') {
+            defaultValueOnParsed = JSON.parse(defaultValueOn as string)
+            defaultValueOffParsed = JSON.parse(defaultValueOff as string)
+        }
+
+        if (variableParams.type === 'Number') {
+            defaultValueOnParsed = Number(defaultValueOn)
+            defaultValueOffParsed = Number(defaultValueOff)
+        }
+
         const feature: CreateFeatureParams = {
             ...featureParams,
             variables: [
                 {
                     ...variableParams,
-                    defaultValue: defaultValueOff,
+                    defaultValue: defaultValueOffParsed,
                 },
             ],
             variations: [
@@ -110,14 +129,14 @@ export default class CreateFeature extends CreateCommand<CreateFeatureParams> {
                     key: 'variation-on',
                     name: 'ON',
                     variables: {
-                        [variableParams.key]: defaultValueOn,
+                        [variableParams.key]: defaultValueOnParsed,
                     },
                 },
                 {
                     key: 'variation-off',
                     name: 'OFF',
                     variables: {
-                        [variableParams.key]: defaultValueOff,
+                        [variableParams.key]: defaultValueOffParsed,
                     },
                 },
             ],

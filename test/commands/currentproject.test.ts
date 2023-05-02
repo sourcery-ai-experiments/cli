@@ -11,7 +11,7 @@ function createConfigFile(content: string, configPath: string) {
 }
 
 const tempDir = tmp.dirSync({ unsafeCleanup: true })
-const configPath = join(tempDir.name, '.devcycle/config.yaml')
+const configPath = join(tempDir.name, '.devcycle/config.yml')
 
 describe('projects:current', () => {
     test.env({ CONFIG_PATH: configPath })
