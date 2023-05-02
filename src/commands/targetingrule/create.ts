@@ -6,7 +6,7 @@ import {
 import { fetchFeatureByKey } from '../../api/features'
 import { promptForVariation } from '../../ui/promptForVariation'
 
-import { featureKeyPrompt, environmentKeyPrompt } from '../../ui/prompts'
+import { featureKeyPrompt, environmentKeyAllPrompt } from '../../ui/prompts'
 import CreateCommand from '../createCommand'
 
 export default class createTargetingRule extends CreateCommand<CreateTargetingRuleParams> {
@@ -26,7 +26,7 @@ export default class createTargetingRule extends CreateCommand<CreateTargetingRu
         }),
     }
 
-    prompts = [featureKeyPrompt, environmentKeyPrompt]
+    prompts = [featureKeyPrompt, environmentKeyAllPrompt]
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(createTargetingRule)

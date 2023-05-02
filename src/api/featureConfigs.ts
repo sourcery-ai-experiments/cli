@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { BASE_URL } from './common'
 import { IsNotEmpty, IsString } from 'class-validator'
+import { fetchEnvironments } from './environments'
 
 type AudiencePayload = {
     name?: string
@@ -123,6 +124,27 @@ export const getFeatureConfigurations = async (
 }
 
 export const addAllUserRule = async (
+    token: string,
+    projectKey: string,
+    featureKey: string,
+    environmentChoice: string,
+    variationId: string,
+): Promise<FeatureConfiguration | null> => {
+    console.log('environmentChoice', environmentChoice)
+    if (environmentChoice === 'all') {
+        const environments = await fetchEnvironments(token, projectKey)
+        const environmentKeys = environments.map((env) => env.key)
+        const promises = environmentKeys.map((envKey) =>
+            addAllUserRuleForEnvironment(token, projectKey, featureKey, envKey, variationId),
+        )
+        const results = await Promise.all(promises)
+        return results[0]
+    } else {
+        return await addAllUserRuleForEnvironment(token, projectKey, featureKey, environmentChoice, variationId)
+    }
+}
+
+export const addAllUserRuleForEnvironment = async (
     token: string,
     projectKey: string,
     featureKey: string,

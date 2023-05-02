@@ -10,6 +10,11 @@ type EnvironmentChoice = {
     value: string
 }
 
+const allEnvironments: EnvironmentChoice[] = [{
+    name: 'All',
+    value: 'all',
+}]
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const environmentIdChoices = async (
     input: Record<string, any>,
@@ -38,6 +43,13 @@ export const environmentKeyChoices = async (
     return choices
 }
 
+export const environmentKeyAllChoices = async (
+    input: Record<string, any>,
+): Promise<EnvironmentChoice[]> => {
+    const environmentKeyAllChoices = await environmentKeyChoices(input)
+    return allEnvironments.concat(environmentKeyAllChoices)
+}
+
 export const environmentIdPrompt = {
     name: '_environment',
     message: 'Which environment?',
@@ -50,6 +62,13 @@ export const environmentKeyPrompt = {
     message: 'Which environment?',
     type: 'list',
     choices: environmentKeyChoices,
+}
+
+export const environmentKeyAllPrompt = {
+    name: 'environment',
+    message: 'Which environment?',
+    type: 'list',
+    choices: environmentKeyAllChoices,
 }
 
 export const environmentTypePrompt = {
