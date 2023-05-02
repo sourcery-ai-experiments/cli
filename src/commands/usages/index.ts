@@ -31,7 +31,7 @@ export default class Usages extends Base {
     static examples = [
         '<%= config.bin %> <%= command.id %>',
         '<%= config.bin %> <%= command.id %> ' +
-            '--match-pattern js="dvcClient\\.variable\\(\\s*["\']([^"\']*)["\']"',
+        '--match-pattern js="dvcClient\\.variable\\(\\s*["\']([^"\']*)["\']"',
     ]
 
     static flags = {
@@ -91,8 +91,8 @@ export default class Usages extends Base {
                 flags['include'] || codeInsightsConfig.includeFiles
             return includeGlobs
                 ? includeGlobs.some((glob) =>
-                      minimatch(filepath, glob, { matchBase: true }),
-                  )
+                    minimatch(filepath, glob, { matchBase: true }),
+                )
                 : true
         }
 
@@ -101,8 +101,8 @@ export default class Usages extends Base {
                 flags['exclude'] || codeInsightsConfig.excludeFiles
             return excludeGlobs
                 ? excludeGlobs.some((glob) =>
-                      minimatch(filepath, glob, { matchBase: true }),
-                  )
+                    minimatch(filepath, glob, { matchBase: true }),
+                )
                 : false
         }
 
@@ -328,7 +328,7 @@ export default class Usages extends Base {
         }
 
         function inputDefaultValuePrompt(
-            state: 'ON' | 'OFF',
+            state: 'On' | 'Off',
         ): QuestionCollection {
             return [
                 {
@@ -395,10 +395,10 @@ export default class Usages extends Base {
 
                             // Prompt user for default values for the 'ON' and 'OFF' states
                             const { defaultValueOn } = await prompt(
-                                inputDefaultValuePrompt('ON'),
+                                inputDefaultValuePrompt('On'),
                             )
                             const { defaultValueOff } = await prompt(
-                                inputDefaultValuePrompt('OFF'),
+                                inputDefaultValuePrompt('Off'),
                             )
 
                             await createFeatureCommand.createFeatureWithVariable(
