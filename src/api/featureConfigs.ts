@@ -130,7 +130,6 @@ export const addAllUserRule = async (
     environmentChoice: string,
     variationId: string,
 ): Promise<FeatureConfiguration | null> => {
-    console.log('environmentChoice', environmentChoice)
     if (environmentChoice === 'all') {
         const environments = await fetchEnvironments(token, projectKey)
         const environmentKeys = environments.map((env) => env.key)

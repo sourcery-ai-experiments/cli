@@ -343,8 +343,6 @@ export default class Usages extends Base {
         const selectedVariables = await prompt(
             selectMissingVariablesPrompt(missingVariables),
         )
-        console.log('selectedVariables', selectedVariables)
-
         if (selectedVariables !== null) {
             // For each selected variable, prompt the user to choose an action
             // for (const variableKey of selectedVariables.variableKey) {
