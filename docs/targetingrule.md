@@ -90,4 +90,7 @@ GLOBAL FLAGS
 
 DESCRIPTION
   Create a new Environment for an existing Feature.
+
+ALIASES
+  $ dvc toggle
 ```

@@ -12,6 +12,7 @@ import CreateCommand from '../createCommand'
 export default class ToggleTargetingRule extends CreateCommand<ListTargetingRuleParams> {
     static hidden = false
     static description = 'Create a new Environment for an existing Feature.'
+    static aliases = ['toggle'];
 
     static flags = {
         ...CreateCommand.flags,
