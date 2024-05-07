@@ -97,7 +97,7 @@ describe('generate types', () => {
                     '/v1/projects/project/variables?perPage=1000&page=1&status=active',
                 )
                 .reply(200, mockVariablesResponse)
-                .get('/v1/organizations/current/members')
+                .get('/v1/organizations/current/members?perPage=100')
                 .reply(200, mockOrganizationMembersResponse),
         )
         .stdout()
@@ -127,7 +127,7 @@ describe('generate types', () => {
                     '/v1/projects/project/variables?perPage=1000&page=1&status=active',
                 )
                 .reply(200, mockVariablesResponse)
-                .get('/v1/organizations/current/members')
+                .get('/v1/organizations/current/members?perPage=100')
                 .reply(200, mockOrganizationMembersResponse),
         )
         .stdout()
@@ -158,7 +158,7 @@ describe('generate types', () => {
                     '/v1/projects/project/variables?perPage=1000&page=1&status=active',
                 )
                 .reply(200, mockVariablesResponse)
-                .get('/v1/organizations/current/members')
+                .get('/v1/organizations/current/members?perPage=100')
                 .reply(200, mockOrganizationMembersResponse),
         )
         .stdout()
@@ -196,7 +196,7 @@ describe('generate types', () => {
                     '/v1/projects/project/variables?perPage=1000&page=1&status=active',
                 )
                 .reply(200, mockVariablesResponse)
-                .get('/v1/organizations/current/members')
+                .get('/v1/organizations/current/members?perPage=100')
                 .reply(200, mockOrganizationMembersResponse),
         )
         .stdout()
@@ -228,7 +228,7 @@ describe('generate types', () => {
                     '/v1/projects/project/variables?perPage=1000&page=1&status=active',
                 )
                 .reply(200, mockVariablesResponse)
-                .get('/v1/organizations/current/members')
+                .get('/v1/organizations/current/members?perPage=100')
                 .reply(200, mockOrganizationMembersResponse),
         )
         .stdout()
